@@ -40,17 +40,31 @@ async function fetchAdminProducts(page: number, pageSize: number) {
 }
 
 async function createProduct(payload: Partial<ProductFormData> & { images?: Array<{ url: string; is_primary: boolean; sort_order: number }> }) {
+  const body = {
+    ...payload,
+    category_id: payload.category_id ? Number(payload.category_id) : undefined,
+    price: payload.price ? Number(payload.price) : undefined,
+    discount_price: payload.discount_price ? Number(payload.discount_price) : undefined,
+    stock: payload.stock ? Number(payload.stock) : undefined,
+  };
   const res = await axiosInstance.post<{ success: boolean; data: { product: Product } }>(
     '/api/products',
-    payload,
+    body,
   );
   return res.data.data.product;
 }
 
 async function updateProduct(id: number, payload: Partial<ProductFormData>) {
+  const body = {
+    ...payload,
+    category_id: payload.category_id ? Number(payload.category_id) : undefined,
+    price: payload.price ? Number(payload.price) : undefined,
+    discount_price: payload.discount_price ? Number(payload.discount_price) : undefined,
+    stock: payload.stock ? Number(payload.stock) : undefined,
+  };
   const res = await axiosInstance.put<{ success: boolean; data: { product: Product } }>(
     `/api/products/${id}`,
-    payload,
+    body,
   );
   return res.data.data.product;
 }
@@ -408,18 +422,13 @@ export default function AdminProductsPage() {
       const validImages = form.image_urls
         .map((url) => url.trim())
         .filter((url) => url.length > 0);
-      const payload = {
-        name: form.name,
+      await createProduct({
+        ...form,
+        category_id: form.category_id || undefined,
+        discount_price: form.discount_price || undefined,
         description: form.description || undefined,
-        category_id: form.category_id ? Number(form.category_id) : undefined,
-        price: Number(form.price),
-        discount_price: form.discount_price ? Number(form.discount_price) : undefined,
-        stock: Number(form.stock),
-        status: form.status,
-        is_featured: form.is_featured,
         images: validImages.map((url, i) => ({ url, is_primary: i === 0, sort_order: i })),
-      };
-      await createProduct(payload);
+      });
       setShowCreate(false);
       loadProducts(1);
     } catch (err: unknown) {
@@ -440,17 +449,12 @@ export default function AdminProductsPage() {
     setSaving(true);
     setFormError('');
     try {
-      const payload = {
-        name: form.name,
+      await updateProduct(editProduct.id, {
+        ...form,
+        category_id: form.category_id || undefined,
+        discount_price: form.discount_price || undefined,
         description: form.description || undefined,
-        category_id: form.category_id ? Number(form.category_id) : undefined,
-        price: Number(form.price),
-        discount_price: form.discount_price ? Number(form.discount_price) : undefined,
-        stock: Number(form.stock),
-        status: form.status,
-        is_featured: form.is_featured,
-      };
-      await updateProduct(editProduct.id, payload);
+      });
       setEditProduct(null);
       loadProducts(pagination.page);
     } catch (err: unknown) {

@@ -35,11 +35,11 @@ export async function getWishlist(): Promise<WishlistData> {
 }
 
 /** POST /api/wishlist — add a product to the wishlist */
-export async function addToWishlist(productId: number): Promise<WishlistItemResult> {
+export async function addToWishlist(productId: number): Promise<WishlistItemResult[]> {
   const res = await axiosInstance.post<WishlistAddResponse>('/api/wishlist', {
     product_id: productId,
   });
-  return res.data.data;
+  return res.data.data ?? [];
 }
 
 /** DELETE /api/wishlist/:productId — remove a product from the wishlist */
