@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS categories (
 -- Products
 CREATE TABLE IF NOT EXISTS products (
     id             SERIAL PRIMARY KEY,
+    sku            VARCHAR(50) UNIQUE,
     name           VARCHAR(255) NOT NULL,
     description    TEXT,
     category_id    INTEGER REFERENCES categories(id),
@@ -41,6 +42,19 @@ CREATE TABLE IF NOT EXISTS products (
     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Add SKU column to existing products table if it doesn't exist
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name='products' AND column_name='sku'
+  ) THEN
+    ALTER TABLE products ADD COLUMN sku VARCHAR(50) UNIQUE;
+  END IF;
+END $$;
+
+-- Backfill SKU for existing products that don't have one
+UPDATE products SET sku = 'KDA-' || LPAD(id::text, 5, '0') WHERE sku IS NULL;
 
 -- Product Images
 CREATE TABLE IF NOT EXISTS product_images (

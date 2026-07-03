@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { getOrderById, type OrderDetailResult } from '../api/orders';
+import { getOrderById, cancelOrder, type OrderDetailResult } from '../api/orders';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -351,6 +351,24 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [errorCode, setErrorCode] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState('');
+
+  const handleCancel = useCallback(async () => {
+    if (!order) return;
+    setCancelling(true);
+    setCancelError('');
+    try {
+      const updated = await cancelOrder(order.id);
+      setOrder(updated);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message ?? 'Failed to cancel order.';
+      setCancelError(msg);
+    } finally {
+      setCancelling(false);
+    }
+  }, [order]);
 
   useEffect(() => {
     if (!id) return;
@@ -428,14 +446,28 @@ export default function OrderDetailPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               Order Details
             </h1>
-            {order && (
-              <span
-                className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold ${statusBadgeClass(order.status)}`}
-              >
-                {order.status}
-              </span>
-            )}
+            <div className="flex items-center gap-3 flex-wrap">
+              {order && (
+                <span
+                  className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold ${statusBadgeClass(order.status)}`}
+                >
+                  {order.status}
+                </span>
+              )}
+              {order && ['Pending', 'Confirmed'].includes(order.status) && (
+                <button
+                  onClick={handleCancel}
+                  disabled={cancelling}
+                  className="px-4 py-1.5 rounded-lg border border-red-300 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                >
+                  {cancelling ? 'Cancelling...' : 'Cancel Order'}
+                </button>
+              )}
+            </div>
           </div>
+          {cancelError && (
+            <p className="mt-2 text-sm text-red-600">{cancelError}</p>
+          )}
 
           {order && (
             <p className="mt-1 text-sm text-gray-500">

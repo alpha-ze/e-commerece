@@ -30,27 +30,43 @@ const EMPTY_FORM: ProductFormData = {
 
 // ── API helpers ───────────────────────────────────────────────────────────────
 
-async function fetchAdminProducts(page: number, pageSize: number) {
+async function fetchAdminProducts(page: number, pageSize: number, sku?: string) {
+  const params: Record<string, string | number> = { page, pageSize };
+  if (sku && sku.trim()) params.sku = sku.trim().toUpperCase();
   const res = await axiosInstance.get<{
     success: boolean;
     data: Product[];
     pagination: PaginationMeta;
-  }>('/api/products', { params: { page, pageSize } });
+  }>('/api/products', { params });
   return { products: res.data.data, pagination: res.data.pagination };
 }
 
 async function createProduct(payload: Partial<ProductFormData> & { images?: Array<{ url: string; is_primary: boolean; sort_order: number }> }) {
+  const body = {
+    ...payload,
+    category_id: payload.category_id ? Number(payload.category_id) : undefined,
+    price: payload.price ? Number(payload.price) : undefined,
+    discount_price: payload.discount_price ? Number(payload.discount_price) : undefined,
+    stock: payload.stock ? Number(payload.stock) : undefined,
+  };
   const res = await axiosInstance.post<{ success: boolean; data: { product: Product } }>(
     '/api/products',
-    payload,
+    body,
   );
   return res.data.data.product;
 }
 
 async function updateProduct(id: number, payload: Partial<ProductFormData>) {
+  const body = {
+    ...payload,
+    category_id: payload.category_id ? Number(payload.category_id) : undefined,
+    price: payload.price ? Number(payload.price) : undefined,
+    discount_price: payload.discount_price ? Number(payload.discount_price) : undefined,
+    stock: payload.stock ? Number(payload.stock) : undefined,
+  };
   const res = await axiosInstance.put<{ success: boolean; data: { product: Product } }>(
     `/api/products/${id}`,
-    payload,
+    body,
   );
   return res.data.data.product;
 }
@@ -345,6 +361,7 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [skuSearch, setSkuSearch] = useState('');
 
   // Modals
   const [showCreate, setShowCreate] = useState(false);
@@ -356,11 +373,11 @@ export default function AdminProductsPage() {
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const loadProducts = useCallback(async (page: number) => {
+  const loadProducts = useCallback(async (page: number, sku?: string) => {
     setLoading(true);
     setError('');
     try {
-      const result = await fetchAdminProducts(page, PAGE_SIZE);
+      const result = await fetchAdminProducts(page, PAGE_SIZE, sku);
       setProducts(result.products);
       setPagination(result.pagination);
     } catch {
@@ -369,6 +386,10 @@ export default function AdminProductsPage() {
       setLoading(false);
     }
   }, []);
+
+  function handleSkuSearch() {
+    loadProducts(1, skuSearch.trim() || undefined);
+  }
 
   useEffect(() => {
     loadProducts(1);
@@ -408,18 +429,13 @@ export default function AdminProductsPage() {
       const validImages = form.image_urls
         .map((url) => url.trim())
         .filter((url) => url.length > 0);
-      const payload = {
-        name: form.name,
+      await createProduct({
+        ...form,
+        category_id: form.category_id || undefined,
+        discount_price: form.discount_price || undefined,
         description: form.description || undefined,
-        category_id: form.category_id ? Number(form.category_id) : undefined,
-        price: Number(form.price),
-        discount_price: form.discount_price ? Number(form.discount_price) : undefined,
-        stock: Number(form.stock),
-        status: form.status,
-        is_featured: form.is_featured,
         images: validImages.map((url, i) => ({ url, is_primary: i === 0, sort_order: i })),
-      };
-      await createProduct(payload);
+      });
       setShowCreate(false);
       loadProducts(1);
     } catch (err: unknown) {
@@ -440,17 +456,12 @@ export default function AdminProductsPage() {
     setSaving(true);
     setFormError('');
     try {
-      const payload = {
-        name: form.name,
+      await updateProduct(editProduct.id, {
+        ...form,
+        category_id: form.category_id || undefined,
+        discount_price: form.discount_price || undefined,
         description: form.description || undefined,
-        category_id: form.category_id ? Number(form.category_id) : undefined,
-        price: Number(form.price),
-        discount_price: form.discount_price ? Number(form.discount_price) : undefined,
-        stock: Number(form.stock),
-        status: form.status,
-        is_featured: form.is_featured,
-      };
-      await updateProduct(editProduct.id, payload);
+      });
       setEditProduct(null);
       loadProducts(pagination.page);
     } catch (err: unknown) {
@@ -479,17 +490,44 @@ export default function AdminProductsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Products</h1>
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Product
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* SKU search */}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Search by SKU (e.g. KDA-00001)"
+                value={skuSearch}
+                onChange={(e) => setSkuSearch(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSkuSearch(); }}
+                className="rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-56"
+              />
+              <button
+                onClick={handleSkuSearch}
+                className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Search
+              </button>
+              {skuSearch && (
+                <button
+                  onClick={() => { setSkuSearch(''); loadProducts(1); }}
+                  className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Product
+            </button>
+          </div>
         </div>
 
         {error && (

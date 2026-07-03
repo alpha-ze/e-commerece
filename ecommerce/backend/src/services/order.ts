@@ -331,7 +331,45 @@ export async function getOrderHistory(
 }
 
 /**
- * Return the full detail of a single order.
+ * Cancel an order (customer-facing).
+ * Only Pending or Confirmed orders can be cancelled by the customer.
+ *
+ * Throws coded errors:
+ *   - ORDER_NOT_FOUND   : no order with this ID
+ *   - ORDER_FORBIDDEN   : order belongs to a different user
+ *   - CANNOT_CANCEL     : order is already Shipped/Delivered/Cancelled
+ */
+export async function cancelOrder(
+  orderId: number,
+  requestingUserId: number,
+): Promise<OrderDetailResult> {
+  const order = await getOrderById(orderId);
+
+  if (!order) {
+    const err = new Error('Order not found') as Error & { code: string };
+    err.code = 'ORDER_NOT_FOUND';
+    throw err;
+  }
+
+  if (order.user_id !== requestingUserId) {
+    const err = new Error('You do not have permission to cancel this order') as Error & { code: string };
+    err.code = 'ORDER_FORBIDDEN';
+    throw err;
+  }
+
+  if (!['Pending', 'Confirmed'].includes(order.status)) {
+    const err = new Error(`Cannot cancel an order with status "${order.status}"`) as Error & { code: string };
+    err.code = 'CANNOT_CANCEL';
+    throw err;
+  }
+
+  await pool.query(
+    `UPDATE orders SET status = 'Cancelled', updated_at = NOW() WHERE id = $1`,
+    [orderId],
+  );
+
+  return getOrderDetail(orderId, requestingUserId);
+}
  *
  * Throws coded errors for known failure cases:
  *   - ORDER_NOT_FOUND : no order with this ID exists

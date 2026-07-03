@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { checkout, getOrderHistory, getOrderDetail } from '../services/order';
+import { checkout, getOrderHistory, getOrderDetail, cancelOrder } from '../services/order';
 import type { ApiResponse } from '../types';
 import type { OrderResult, OrderHistoryResult, OrderDetailResult } from '../services/order';
 
@@ -199,6 +199,58 @@ export async function getOrderHandler(
           error: { message: err.message },
         };
         res.status(403).json(body);
+        return;
+      }
+    }
+    next(err);
+  }
+}
+
+/**
+ * DELETE /api/orders/:id
+ *
+ * Cancels a Pending or Confirmed order for the authenticated customer.
+ *
+ * Response shape:
+ *   200  { success: true, data: { ...order } }
+ *   400  { success: false, error: { message: "Cannot cancel..." } }
+ *   403  { success: false, error: { message: "..." } }
+ *   404  { success: false, error: { message: "..." } }
+ */
+export async function cancelOrderHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const orderId = parseInt(req.params.id, 10);
+
+    if (!Number.isFinite(orderId) || orderId <= 0) {
+      const body: ApiResponse<never> = {
+        success: false,
+        error: { message: 'Order ID must be a positive integer' },
+      };
+      res.status(400).json(body);
+      return;
+    }
+
+    const order = await cancelOrder(orderId, userId);
+
+    const body: ApiResponse<OrderDetailResult> = { success: true, data: order };
+    res.status(200).json(body);
+  } catch (err) {
+    if (isCodedError(err)) {
+      if (err.code === 'ORDER_NOT_FOUND') {
+        res.status(404).json({ success: false, error: { message: err.message } });
+        return;
+      }
+      if (err.code === 'ORDER_FORBIDDEN') {
+        res.status(403).json({ success: false, error: { message: err.message } });
+        return;
+      }
+      if (err.code === 'CANNOT_CANCEL') {
+        res.status(400).json({ success: false, error: { message: err.message } });
         return;
       }
     }

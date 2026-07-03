@@ -32,6 +32,7 @@ export interface ListProductsInput {
   page?: string | number;
   pageSize?: string | number;
   q?: string;
+  sku?: string;
   categoryId?: string | number;
   minPrice?: string | number;
   maxPrice?: string | number;
@@ -90,6 +91,7 @@ export async function listProducts(
     page,
     pageSize,
     q: input.q,
+    sku: input.sku,
     categoryId: Number.isFinite(categoryId) ? categoryId : undefined,
     minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
     maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
