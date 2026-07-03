@@ -370,6 +370,9 @@ export async function cancelOrder(
 
   return getOrderDetail(orderId, requestingUserId);
 }
+
+/**
+ * Return the full detail of a single order.
  *
  * Throws coded errors for known failure cases:
  *   - ORDER_NOT_FOUND : no order with this ID exists
