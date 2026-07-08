@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { getOrders, type OrderSummary, type OrderPaginationMeta } from '../api/orders';
+import { getOrders, cancelOrder, type OrderSummary, type OrderPaginationMeta } from '../api/orders';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -72,36 +72,81 @@ function EmptyOrders() {
 
 // ── Order row ─────────────────────────────────────────────────────────────────
 
-function OrderRow({ order }: { order: OrderSummary }) {
+interface OrderRowProps {
+  order: OrderSummary;
+  onCancelled: () => void;
+}
+
+function OrderRow({ order, onCancelled }: OrderRowProps) {
   const badgeClass = statusBadgeClass(order.status);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState('');
+  const canCancel = order.status === 'Pending' || order.status === 'Confirmed';
+
+  async function handleCancel() {
+    if (!window.confirm(`Cancel order #${order.id}?`)) return;
+    setCancelling(true);
+    setCancelError('');
+    try {
+      await cancelOrder(order.id);
+      onCancelled();
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data?.error?.message ?? 'Failed to cancel order.';
+      setCancelError(msg);
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   return (
-    <tr className="hover:bg-gray-50 transition-colors">
-      <td className="py-4 pl-6 pr-3 text-sm font-medium text-gray-900 whitespace-nowrap">
-        #{order.id}
-      </td>
-      <td className="px-3 py-4 text-sm text-gray-500 whitespace-nowrap">
-        {formatDate(order.created_at)}
-      </td>
-      <td className="px-3 py-4 text-sm whitespace-nowrap">
-        <span
-          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${badgeClass}`}
-        >
-          {order.status}
-        </span>
-      </td>
-      <td className="px-3 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap text-right">
-        ${parseFloat(order.total).toFixed(2)}
-      </td>
-      <td className="py-4 pl-3 pr-6 text-sm text-right whitespace-nowrap">
-        <Link
-          to={`/orders/${order.id}`}
-          className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-1 rounded"
-        >
-          View Details
-        </Link>
-      </td>
-    </tr>
+    <>
+      <tr className="hover:bg-gray-50 transition-colors">
+        <td className="py-4 pl-6 pr-3 text-sm font-medium text-gray-900 whitespace-nowrap">
+          #{order.id}
+        </td>
+        <td className="px-3 py-4 text-sm text-gray-500 whitespace-nowrap">
+          {formatDate(order.created_at)}
+        </td>
+        <td className="px-3 py-4 text-sm whitespace-nowrap">
+          <span
+            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${badgeClass}`}
+          >
+            {order.status}
+          </span>
+        </td>
+        <td className="px-3 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap text-right">
+          ${parseFloat(order.total).toFixed(2)}
+        </td>
+        <td className="py-4 pl-3 pr-6 text-sm text-right whitespace-nowrap">
+          <div className="flex items-center justify-end gap-3">
+            {canCancel && (
+              <button
+                onClick={handleCancel}
+                disabled={cancelling}
+                className="font-medium text-red-600 hover:text-red-500 disabled:opacity-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1 rounded"
+              >
+                {cancelling ? 'Cancelling…' : 'Cancel'}
+              </button>
+            )}
+            <Link
+              to={`/orders/${order.id}`}
+              className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-1 rounded"
+            >
+              View Details
+            </Link>
+          </div>
+        </td>
+      </tr>
+      {cancelError && (
+        <tr>
+          <td colSpan={5} className="px-6 pb-3 text-xs text-red-600">
+            {cancelError}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -325,7 +370,11 @@ export default function OrderHistoryPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
                   {orders.map((order) => (
-                    <OrderRow key={order.id} order={order} />
+                    <OrderRow
+                      key={order.id}
+                      order={order}
+                      onCancelled={() => loadOrders(pagination.page)}
+                    />
                   ))}
                 </tbody>
               </table>

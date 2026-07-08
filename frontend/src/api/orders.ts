@@ -114,6 +114,14 @@ export async function getOrders(
   return { orders: res.data.data, pagination: res.data.pagination };
 }
 
+/** DELETE /api/orders/:id — cancel a Pending or Confirmed order */
+export async function cancelOrder(id: number): Promise<OrderDetailResult> {
+  const res = await axiosInstance.delete<{ success: boolean; data: OrderDetailResult }>(
+    `/api/orders/${id}`,
+  );
+  return res.data.data;
+}
+
 /** GET /api/orders/:id — full order detail */
 export async function getOrderById(id: number): Promise<OrderDetailResult> {
   const res = await axiosInstance.get<{ success: boolean; data: OrderDetailResult }>(
