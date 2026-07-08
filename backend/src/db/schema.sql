@@ -60,7 +60,7 @@ UPDATE products SET sku = 'KDA-' || LPAD(id::text, 5, '0') WHERE sku IS NULL;
 CREATE TABLE IF NOT EXISTS product_images (
     id         SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    url        VARCHAR(1024) NOT NULL,
+    url        TEXT NOT NULL,
     is_primary BOOLEAN NOT NULL DEFAULT FALSE,
     sort_order INTEGER NOT NULL DEFAULT 0
 );
@@ -180,3 +180,6 @@ DO $$ BEGIN
     CHECK (status IN ('Pending','Confirmed','Shipped','Delivered','Cancelled','Return_Requested','Returned'));
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
+
+-- Widen product_images.url to TEXT for base64 support
+ALTER TABLE product_images ALTER COLUMN url TYPE TEXT;

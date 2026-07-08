@@ -125,6 +125,8 @@ interface ProductFormProps {
 }
 
 function ProductForm({ form, onChange, categories, onSubmit, onCancel, saving, submitLabel, error }: ProductFormProps) {
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+
   function set(key: keyof ProductFormData, value: string | boolean | string[]) {
     onChange({ ...form, [key]: value });
   }
@@ -142,6 +144,43 @@ function ProductForm({ form, onChange, categories, onSubmit, onCancel, saving, s
   function removeImageUrl(index: number) {
     const updated = form.image_urls.filter((_, i) => i !== index);
     onChange({ ...form, image_urls: updated.length === 0 ? [''] : updated });
+  }
+
+  async function handleFileUpload(index: number, file: File) {
+    setUploadingIdx(index);
+    try {
+      // Resize image to max 800px and compress to JPEG quality 80
+      // This keeps base64 under ~100KB which fits in TEXT column
+      const resized = await new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+          const MAX = 800;
+          let { width, height } = img;
+          if (width > MAX || height > MAX) {
+            if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+            else { width = Math.round(width * MAX / height); height = MAX; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = reject;
+        img.src = objectUrl;
+      });
+      setImageUrl(index, resized);
+    } catch {
+      // fallback: read as-is
+      const reader = new FileReader();
+      reader.onload = () => { setImageUrl(index, reader.result as string); };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingIdx(null);
+    }
   }
 
   return (
@@ -243,10 +282,10 @@ function ProductForm({ form, onChange, categories, onSubmit, onCancel, saving, s
         </div>
       </div>
 
-      {/* Image URLs */}
+      {/* Product Images — file upload OR URL */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="block text-sm font-medium text-gray-700">Product Images (URLs)</label>
+          <label className="block text-sm font-medium text-gray-700">Product Images</label>
           <button
             type="button"
             onClick={addImageUrl}
@@ -255,43 +294,70 @@ function ProductForm({ form, onChange, categories, onSubmit, onCancel, saving, s
             + Add image
           </button>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {form.image_urls.map((url, index) => (
-            <div key={index} className="flex gap-2 items-center">
-              <div className="w-10 h-10 flex-shrink-0 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
-                {url ? (
-                  <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <div key={index} className="space-y-1.5">
+              <div className="flex gap-2 items-start">
+                {/* Preview */}
+                <div className="w-12 h-12 flex-shrink-0 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
+                  {url ? (
+                    <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-1.5">
+                  {/* File upload */}
+                  <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-gray-300 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors text-xs text-gray-500 ${uploadingIdx === index ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                  </div>
+                    {uploadingIdx === index ? 'Loading...' : 'Upload from device'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(index, file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  {/* URL input */}
+                  <input
+                    type="url"
+                    placeholder={index === 0 ? 'Or paste image URL...' : `Or paste URL...`}
+                    value={url.startsWith('data:') ? '' : url}
+                    onChange={(e) => setImageUrl(index, e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  />
+                </div>
+
+                {form.image_urls.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeImageUrl(index)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors mt-0.5"
+                    aria-label="Remove image"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 )}
               </div>
-              <input
-                type="url"
-                placeholder={index === 0 ? 'Primary image URL' : `Image ${index + 1} URL`}
-                value={url}
-                onChange={(e) => setImageUrl(index, e.target.value)}
-                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              />
-              {form.image_urls.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeImageUrl(index)}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                  aria-label="Remove image"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+              {index === 0 && (
+                <p className="text-xs text-gray-400 pl-14">First image is the primary image shown in the catalog.</p>
               )}
             </div>
           ))}
         </div>
-        <p className="mt-1 text-xs text-gray-400">First image will be the primary image shown in the catalog.</p>
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
@@ -314,7 +380,6 @@ function ProductForm({ form, onChange, categories, onSubmit, onCancel, saving, s
     </div>
   );
 }
-
 // ── Pagination ────────────────────────────────────────────────────────────────
 
 function Pagination({
@@ -544,7 +609,7 @@ export default function AdminProductsPage() {
               <table className="min-w-full divide-y divide-gray-200" aria-label="Products table">
                 <thead className="bg-gray-50">
                   <tr>
-                    {['Image', 'ID', 'Name', 'Category', 'Price', 'Stock', 'Status', 'Featured', 'Actions'].map((h) => (
+                    {['Image', 'SKU', 'Name', 'Category', 'Price', 'Stock', 'Status', 'Featured', 'Actions'].map((h) => (
                       <th key={h} scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">
                         {h}
                       </th>
@@ -574,7 +639,7 @@ export default function AdminProductsPage() {
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{p.id}</td>
+                        <td className="px-4 py-3 text-sm font-mono text-gray-500">{p.sku ?? '—'}</td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900 max-w-[200px] truncate">{p.name}</td>
                         <td className="px-4 py-3 text-sm text-gray-500">{p.category_name ?? '—'}</td>
                         <td className="px-4 py-3 text-sm text-gray-900">

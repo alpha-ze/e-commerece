@@ -60,7 +60,7 @@ UPDATE products SET sku = 'KDA-' || LPAD(id::text, 5, '0') WHERE sku IS NULL;
 CREATE TABLE IF NOT EXISTS product_images (
     id         SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    url        VARCHAR(1024) NOT NULL,
+    url        TEXT NOT NULL,
     is_primary BOOLEAN NOT NULL DEFAULT FALSE,
     sort_order INTEGER NOT NULL DEFAULT 0
 );
@@ -168,3 +168,18 @@ CREATE INDEX IF NOT EXISTS idx_products_is_featured ON products(is_featured);
 CREATE INDEX IF NOT EXISTS idx_orders_user_id      ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status       ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_cart_user_id        ON cart(user_id);
+
+-- ============================================================
+-- Migrations for existing deployments
+-- ============================================================
+
+-- Extend orders status check to include Return_Requested and Returned
+DO $$ BEGIN
+  ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check;
+  ALTER TABLE orders ADD CONSTRAINT orders_status_check
+    CHECK (status IN ('Pending','Confirmed','Shipped','Delivered','Cancelled','Return_Requested','Returned'));
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+-- Widen product_images.url to TEXT for base64 support
+ALTER TABLE product_images ALTER COLUMN url TYPE TEXT;

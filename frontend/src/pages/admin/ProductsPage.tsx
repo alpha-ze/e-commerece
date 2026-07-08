@@ -149,16 +149,36 @@ function ProductForm({ form, onChange, categories, onSubmit, onCancel, saving, s
   async function handleFileUpload(index: number, file: File) {
     setUploadingIdx(index);
     try {
-      // Convert to base64 data URL for preview — works offline, no external service needed
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
-        setImageUrl(index, dataUrl);
-        setUploadingIdx(null);
-      };
-      reader.onerror = () => setUploadingIdx(null);
-      reader.readAsDataURL(file);
+      // Resize image to max 800px and compress to JPEG quality 80
+      // This keeps base64 under ~100KB which fits in TEXT column
+      const resized = await new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+          const MAX = 800;
+          let { width, height } = img;
+          if (width > MAX || height > MAX) {
+            if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+            else { width = Math.round(width * MAX / height); height = MAX; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = reject;
+        img.src = objectUrl;
+      });
+      setImageUrl(index, resized);
     } catch {
+      // fallback: read as-is
+      const reader = new FileReader();
+      reader.onload = () => { setImageUrl(index, reader.result as string); };
+      reader.readAsDataURL(file);
+    } finally {
       setUploadingIdx(null);
     }
   }
