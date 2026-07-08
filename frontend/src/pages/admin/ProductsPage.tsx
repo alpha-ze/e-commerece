@@ -30,12 +30,14 @@ const EMPTY_FORM: ProductFormData = {
 
 // ── API helpers ───────────────────────────────────────────────────────────────
 
-async function fetchAdminProducts(page: number, pageSize: number) {
+async function fetchAdminProducts(page: number, pageSize: number, sku?: string) {
+  const params: Record<string, string | number> = { page, pageSize };
+  if (sku && sku.trim()) params.sku = sku.trim().toUpperCase();
   const res = await axiosInstance.get<{
     success: boolean;
     data: Product[];
     pagination: PaginationMeta;
-  }>('/api/products', { params: { page, pageSize } });
+  }>('/api/products', { params });
   return { products: res.data.data, pagination: res.data.pagination };
 }
 
@@ -123,6 +125,8 @@ interface ProductFormProps {
 }
 
 function ProductForm({ form, onChange, categories, onSubmit, onCancel, saving, submitLabel, error }: ProductFormProps) {
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+
   function set(key: keyof ProductFormData, value: string | boolean | string[]) {
     onChange({ ...form, [key]: value });
   }
@@ -140,6 +144,23 @@ function ProductForm({ form, onChange, categories, onSubmit, onCancel, saving, s
   function removeImageUrl(index: number) {
     const updated = form.image_urls.filter((_, i) => i !== index);
     onChange({ ...form, image_urls: updated.length === 0 ? [''] : updated });
+  }
+
+  async function handleFileUpload(index: number, file: File) {
+    setUploadingIdx(index);
+    try {
+      // Convert to base64 data URL for preview — works offline, no external service needed
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        setImageUrl(index, dataUrl);
+        setUploadingIdx(null);
+      };
+      reader.onerror = () => setUploadingIdx(null);
+      reader.readAsDataURL(file);
+    } catch {
+      setUploadingIdx(null);
+    }
   }
 
   return (
@@ -241,10 +262,10 @@ function ProductForm({ form, onChange, categories, onSubmit, onCancel, saving, s
         </div>
       </div>
 
-      {/* Image URLs */}
+      {/* Product Images — file upload OR URL */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="block text-sm font-medium text-gray-700">Product Images (URLs)</label>
+          <label className="block text-sm font-medium text-gray-700">Product Images</label>
           <button
             type="button"
             onClick={addImageUrl}
@@ -253,43 +274,70 @@ function ProductForm({ form, onChange, categories, onSubmit, onCancel, saving, s
             + Add image
           </button>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {form.image_urls.map((url, index) => (
-            <div key={index} className="flex gap-2 items-center">
-              <div className="w-10 h-10 flex-shrink-0 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
-                {url ? (
-                  <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <div key={index} className="space-y-1.5">
+              <div className="flex gap-2 items-start">
+                {/* Preview */}
+                <div className="w-12 h-12 flex-shrink-0 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
+                  {url ? (
+                    <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-1.5">
+                  {/* File upload */}
+                  <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-gray-300 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors text-xs text-gray-500 ${uploadingIdx === index ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                  </div>
+                    {uploadingIdx === index ? 'Loading...' : 'Upload from device'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(index, file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  {/* URL input */}
+                  <input
+                    type="url"
+                    placeholder={index === 0 ? 'Or paste image URL...' : `Or paste URL...`}
+                    value={url.startsWith('data:') ? '' : url}
+                    onChange={(e) => setImageUrl(index, e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  />
+                </div>
+
+                {form.image_urls.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeImageUrl(index)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors mt-0.5"
+                    aria-label="Remove image"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 )}
               </div>
-              <input
-                type="url"
-                placeholder={index === 0 ? 'Primary image URL' : `Image ${index + 1} URL`}
-                value={url}
-                onChange={(e) => setImageUrl(index, e.target.value)}
-                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              />
-              {form.image_urls.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeImageUrl(index)}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                  aria-label="Remove image"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+              {index === 0 && (
+                <p className="text-xs text-gray-400 pl-14">First image is the primary image shown in the catalog.</p>
               )}
             </div>
           ))}
         </div>
-        <p className="mt-1 text-xs text-gray-400">First image will be the primary image shown in the catalog.</p>
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
@@ -312,7 +360,6 @@ function ProductForm({ form, onChange, categories, onSubmit, onCancel, saving, s
     </div>
   );
 }
-
 // ── Pagination ────────────────────────────────────────────────────────────────
 
 function Pagination({
@@ -359,6 +406,7 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [skuSearch, setSkuSearch] = useState('');
 
   // Modals
   const [showCreate, setShowCreate] = useState(false);
@@ -370,11 +418,11 @@ export default function AdminProductsPage() {
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const loadProducts = useCallback(async (page: number) => {
+  const loadProducts = useCallback(async (page: number, sku?: string) => {
     setLoading(true);
     setError('');
     try {
-      const result = await fetchAdminProducts(page, PAGE_SIZE);
+      const result = await fetchAdminProducts(page, PAGE_SIZE, sku);
       setProducts(result.products);
       setPagination(result.pagination);
     } catch {
@@ -383,6 +431,10 @@ export default function AdminProductsPage() {
       setLoading(false);
     }
   }, []);
+
+  function handleSkuSearch() {
+    loadProducts(1, skuSearch.trim() || undefined);
+  }
 
   useEffect(() => {
     loadProducts(1);
@@ -483,17 +535,44 @@ export default function AdminProductsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Products</h1>
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Product
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* SKU search */}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Search by SKU (e.g. KDA-00001)"
+                value={skuSearch}
+                onChange={(e) => setSkuSearch(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSkuSearch(); }}
+                className="rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-56"
+              />
+              <button
+                onClick={handleSkuSearch}
+                className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Search
+              </button>
+              {skuSearch && (
+                <button
+                  onClick={() => { setSkuSearch(''); loadProducts(1); }}
+                  className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Product
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -510,7 +589,7 @@ export default function AdminProductsPage() {
               <table className="min-w-full divide-y divide-gray-200" aria-label="Products table">
                 <thead className="bg-gray-50">
                   <tr>
-                    {['Image', 'ID', 'Name', 'Category', 'Price', 'Stock', 'Status', 'Featured', 'Actions'].map((h) => (
+                    {['Image', 'SKU', 'Name', 'Category', 'Price', 'Stock', 'Status', 'Featured', 'Actions'].map((h) => (
                       <th key={h} scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">
                         {h}
                       </th>
@@ -540,7 +619,7 @@ export default function AdminProductsPage() {
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{p.id}</td>
+                        <td className="px-4 py-3 text-sm font-mono text-gray-500">{p.sku ?? '—'}</td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900 max-w-[200px] truncate">{p.name}</td>
                         <td className="px-4 py-3 text-sm text-gray-500">{p.category_name ?? '—'}</td>
                         <td className="px-4 py-3 text-sm text-gray-900">

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { checkout, getOrderHistory, getOrderDetail } from '../services/order';
+import { checkout, getOrderHistory, getOrderDetail, cancelOrder, returnOrder } from '../services/order';
 import type { ApiResponse } from '../types';
 import type { OrderResult, OrderHistoryResult, OrderDetailResult } from '../services/order';
 
@@ -201,6 +201,62 @@ export async function getOrderHandler(
         res.status(403).json(body);
         return;
       }
+    }
+    next(err);
+  }
+}
+
+/**
+ * DELETE /api/orders/:id
+ * Cancel a Pending or Confirmed order.
+ */
+export async function cancelOrderHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const orderId = parseInt(req.params.id, 10);
+    if (!Number.isFinite(orderId) || orderId <= 0) {
+      res.status(400).json({ success: false, error: { message: 'Order ID must be a positive integer' } });
+      return;
+    }
+    const order = await cancelOrder(orderId, userId);
+    res.status(200).json({ success: true, data: order } as ApiResponse<OrderDetailResult>);
+  } catch (err) {
+    if (isCodedError(err)) {
+      if (err.code === 'ORDER_NOT_FOUND') { res.status(404).json({ success: false, error: { message: err.message } }); return; }
+      if (err.code === 'ORDER_FORBIDDEN') { res.status(403).json({ success: false, error: { message: err.message } }); return; }
+      if (err.code === 'CANNOT_CANCEL')   { res.status(400).json({ success: false, error: { message: err.message } }); return; }
+    }
+    next(err);
+  }
+}
+
+/**
+ * POST /api/orders/:id/return
+ * Request a return on a Delivered order.
+ */
+export async function returnOrderHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const orderId = parseInt(req.params.id, 10);
+    if (!Number.isFinite(orderId) || orderId <= 0) {
+      res.status(400).json({ success: false, error: { message: 'Order ID must be a positive integer' } });
+      return;
+    }
+    const order = await returnOrder(orderId, userId);
+    res.status(200).json({ success: true, data: order } as ApiResponse<OrderDetailResult>);
+  } catch (err) {
+    if (isCodedError(err)) {
+      if (err.code === 'ORDER_NOT_FOUND') { res.status(404).json({ success: false, error: { message: err.message } }); return; }
+      if (err.code === 'ORDER_FORBIDDEN') { res.status(403).json({ success: false, error: { message: err.message } }); return; }
+      if (err.code === 'CANNOT_RETURN')   { res.status(400).json({ success: false, error: { message: err.message } }); return; }
     }
     next(err);
   }

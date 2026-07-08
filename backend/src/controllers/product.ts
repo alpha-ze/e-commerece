@@ -70,6 +70,7 @@ export async function listProductsHandler(
       page: req.query.page as string | undefined,
       pageSize: req.query.pageSize as string | undefined,
       q: req.query.q as string | undefined,
+      sku: req.query.sku as string | undefined,
       categoryId: req.query.categoryId as string | undefined,
       minPrice: req.query.minPrice as string | undefined,
       maxPrice: req.query.maxPrice as string | undefined,

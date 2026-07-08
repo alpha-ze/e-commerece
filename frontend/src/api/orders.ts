@@ -122,6 +122,14 @@ export async function cancelOrder(id: number): Promise<OrderDetailResult> {
   return res.data.data;
 }
 
+/** POST /api/orders/:id/return — request a return on a Delivered order */
+export async function returnOrder(id: number): Promise<OrderDetailResult> {
+  const res = await axiosInstance.post<{ success: boolean; data: OrderDetailResult }>(
+    `/api/orders/${id}/return`,
+  );
+  return res.data.data;
+}
+
 /** GET /api/orders/:id — full order detail */
 export async function getOrderById(id: number): Promise<OrderDetailResult> {
   const res = await axiosInstance.get<{ success: boolean; data: OrderDetailResult }>(

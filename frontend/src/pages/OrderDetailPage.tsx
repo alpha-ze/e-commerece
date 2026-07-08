@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { getOrderById, cancelOrder, type OrderDetailResult } from '../api/orders';
+import { getOrderById, cancelOrder, returnOrder, type OrderDetailResult } from '../api/orders';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -8,11 +8,13 @@ import { getOrderById, cancelOrder, type OrderDetailResult } from '../api/orders
 const STATUS_SEQUENCE = ['Pending', 'Confirmed', 'Shipped', 'Delivered'] as const;
 
 const STATUS_BADGE: Record<string, string> = {
-  Pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  Confirmed: 'bg-blue-100 text-blue-800 border-blue-200',
-  Shipped: 'bg-purple-100 text-purple-800 border-purple-200',
-  Delivered: 'bg-green-100 text-green-800 border-green-200',
-  Cancelled: 'bg-red-100 text-red-800 border-red-200',
+  Pending:          'bg-yellow-100 text-yellow-800 border-yellow-200',
+  Confirmed:        'bg-blue-100 text-blue-800 border-blue-200',
+  Shipped:          'bg-purple-100 text-purple-800 border-purple-200',
+  Delivered:        'bg-green-100 text-green-800 border-green-200',
+  Cancelled:        'bg-red-100 text-red-800 border-red-200',
+  Return_Requested: 'bg-orange-100 text-orange-800 border-orange-200',
+  Returned:         'bg-gray-100 text-gray-700 border-gray-200',
 };
 
 function statusBadgeClass(status: string): string {
@@ -72,6 +74,8 @@ interface StatusTrackerProps {
 
 function StatusTracker({ status }: StatusTrackerProps) {
   const isCancelled = status === 'Cancelled';
+  const isReturnRequested = status === 'Return_Requested';
+  const isReturned = status === 'Returned';
   const currentIndex = STATUS_SEQUENCE.indexOf(status as (typeof STATUS_SEQUENCE)[number]);
 
   if (isCancelled) {
@@ -87,6 +91,29 @@ function StatusTracker({ status }: StatusTrackerProps) {
           <div>
             <p className="text-sm font-semibold text-red-800">Order Cancelled</p>
             <p className="text-xs text-red-600 mt-0.5">This order has been cancelled.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isReturnRequested || isReturned) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Order Status</h2>
+        <div className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${isReturned ? 'bg-gray-50 border-gray-200' : 'bg-orange-50 border-orange-200'}`}>
+          <span className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isReturned ? 'bg-gray-400' : 'bg-orange-400'}`} aria-hidden="true">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+          </span>
+          <div>
+            <p className={`text-sm font-semibold ${isReturned ? 'text-gray-700' : 'text-orange-800'}`}>
+              {isReturned ? 'Order Returned' : 'Return Requested'}
+            </p>
+            <p className={`text-xs mt-0.5 ${isReturned ? 'text-gray-500' : 'text-orange-600'}`}>
+              {isReturned ? 'Your return has been processed.' : 'Your return request is being reviewed.'}
+            </p>
           </div>
         </div>
       </div>
@@ -353,6 +380,8 @@ export default function OrderDetailPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
+  const [returning, setReturning] = useState(false);
+  const [returnError, setReturnError] = useState('');
 
   const handleCancel = useCallback(async () => {
     if (!order) return;
@@ -368,6 +397,24 @@ export default function OrderDetailPage() {
       setCancelError(msg);
     } finally {
       setCancelling(false);
+    }
+  }, [order]);
+
+  const handleReturn = useCallback(async () => {
+    if (!order) return;
+    if (!window.confirm('Request a return for this order?')) return;
+    setReturning(true);
+    setReturnError('');
+    try {
+      const updated = await returnOrder(order.id);
+      setOrder(updated);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data?.error?.message ?? 'Failed to request return.';
+      setReturnError(msg);
+    } finally {
+      setReturning(false);
     }
   }, [order]);
 
@@ -464,10 +511,22 @@ export default function OrderDetailPage() {
                   {cancelling ? 'Cancelling...' : 'Cancel Order'}
                 </button>
               )}
+              {order && order.status === 'Delivered' && (
+                <button
+                  onClick={handleReturn}
+                  disabled={returning}
+                  className="px-4 py-1.5 rounded-lg border border-orange-300 text-sm font-semibold text-orange-600 hover:bg-orange-50 disabled:opacity-50 transition-colors"
+                >
+                  {returning ? 'Requesting...' : 'Request Return'}
+                </button>
+              )}
             </div>
           </div>
           {cancelError && (
             <p className="mt-2 text-sm text-red-600">{cancelError}</p>
+          )}
+          {returnError && (
+            <p className="mt-2 text-sm text-orange-600">{returnError}</p>
           )}
 
           {order && (

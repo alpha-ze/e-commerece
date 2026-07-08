@@ -4,68 +4,94 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-900 text-gray-400 mt-auto">
+    <footer className="bg-[#1a1a1a] text-gray-400 mt-8">
+      {/* Main footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <span className="text-white text-lg font-bold">ShopKiro</span>
-            <p className="mt-2 text-sm leading-relaxed">
-              Your one-stop shop for everything you need, delivered right to your door.
+            <span className="text-white text-2xl font-extrabold tracking-tight">Kada</span>
+            <p className="mt-3 text-sm leading-relaxed">
+              Your trusted destination for electronics and more — quality products at unbeatable prices.
             </p>
+            <div className="flex gap-3 mt-4">
+              {/* Social placeholders */}
+              {['F', 'T', 'I'].map((s) => (
+                <span key={s} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white hover:bg-[#E31E24] cursor-pointer transition-colors">
+                  {s}
+                </span>
+              ))}
+            </div>
           </div>
 
-          {/* Quick links */}
+          {/* Shop */}
           <div>
-            <h3 className="text-white text-sm font-semibold uppercase tracking-wider mb-3">
-              Quick Links
-            </h3>
+            <h3 className="text-white text-sm font-bold uppercase tracking-wider mb-4">Shop</h3>
             <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/products" className="hover:text-white transition-colors">
-                  Shop
-                </Link>
-              </li>
-              <li>
-                <Link to="/cart" className="hover:text-white transition-colors">
-                  Cart
-                </Link>
-              </li>
-              <li>
-                <Link to="/wishlist" className="hover:text-white transition-colors">
-                  Wishlist
-                </Link>
-              </li>
-              <li>
-                <Link to="/profile" className="hover:text-white transition-colors">
-                  Account
-                </Link>
-              </li>
+              {[
+                { to: '/products', label: 'All Products' },
+                { to: '/products?sort=newest', label: 'New Arrivals' },
+                { to: '/products?sort=popularity', label: 'Best Sellers' },
+                { to: '/products?sort=price_asc', label: 'Deals & Offers' },
+              ].map((l) => (
+                <li key={l.to}>
+                  <Link to={l.to} className="hover:text-white hover:underline transition-colors">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Account */}
+          <div>
+            <h3 className="text-white text-sm font-bold uppercase tracking-wider mb-4">My Account</h3>
+            <ul className="space-y-2 text-sm">
+              {[
+                { to: '/profile', label: 'My Profile' },
+                { to: '/orders', label: 'Order History' },
+                { to: '/wishlist', label: 'Wishlist' },
+                { to: '/cart', label: 'Cart' },
+              ].map((l) => (
+                <li key={l.to}>
+                  <Link to={l.to} className="hover:text-white hover:underline transition-colors">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
           {/* Support */}
           <div>
-            <h3 className="text-white text-sm font-semibold uppercase tracking-wider mb-3">
-              Support
-            </h3>
+            <h3 className="text-white text-sm font-bold uppercase tracking-wider mb-4">Support</h3>
             <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/orders" className="hover:text-white transition-colors">
-                  Order History
-                </Link>
+              <li className="flex items-start gap-2">
+                <span>📍</span>
+                <span>Dubai, United Arab Emirates</span>
               </li>
-              <li>
-                <Link to="/profile" className="hover:text-white transition-colors">
-                  My Account
-                </Link>
+              <li className="flex items-start gap-2">
+                <span>📧</span>
+                <span>support@kada.ae</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span>📞</span>
+                <span>+971 4 000 0000</span>
               </li>
             </ul>
           </div>
         </div>
+      </div>
 
-        <div className="mt-8 pt-6 border-t border-gray-700 text-center text-xs">
-          <p>© {year} ShopKiro. All rights reserved.</p>
+      {/* Bottom bar */}
+      <div className="border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+          <p>© {year} Kada Electronics. All rights reserved.</p>
+          <div className="flex gap-4">
+            <span className="hover:text-white cursor-pointer">Privacy Policy</span>
+            <span className="hover:text-white cursor-pointer">Terms of Use</span>
+            <span className="hover:text-white cursor-pointer">Cookie Policy</span>
+          </div>
         </div>
       </div>
     </footer>

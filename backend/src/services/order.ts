@@ -302,6 +302,87 @@ export interface OrderDetailResult {
 // ── Service functions ─────────────────────────────────────────────────────────
 
 /**
+ * Cancel an order (customer-facing).
+ * Only Pending or Confirmed orders can be cancelled.
+ *
+ * Throws coded errors:
+ *   - ORDER_NOT_FOUND : no order with this ID
+ *   - ORDER_FORBIDDEN : order belongs to a different user
+ *   - CANNOT_CANCEL   : order is Shipped/Delivered/Cancelled/Return_Requested/Returned
+ */
+export async function cancelOrder(
+  orderId: number,
+  requestingUserId: number,
+): Promise<OrderDetailResult> {
+  const order = await getOrderById(orderId);
+
+  if (!order) {
+    const err = new Error('Order not found') as Error & { code: string };
+    err.code = 'ORDER_NOT_FOUND';
+    throw err;
+  }
+
+  if (order.user_id !== requestingUserId) {
+    const err = new Error('You do not have permission to cancel this order') as Error & { code: string };
+    err.code = 'ORDER_FORBIDDEN';
+    throw err;
+  }
+
+  if (!['Pending', 'Confirmed'].includes(order.status)) {
+    const err = new Error(`Cannot cancel an order with status "${order.status}"`) as Error & { code: string };
+    err.code = 'CANNOT_CANCEL';
+    throw err;
+  }
+
+  await pool.query(
+    `UPDATE orders SET status = 'Cancelled', updated_at = NOW() WHERE id = $1`,
+    [orderId],
+  );
+
+  return getOrderDetail(orderId, requestingUserId);
+}
+
+/**
+ * Request a return on a Delivered order (customer-facing).
+ *
+ * Throws coded errors:
+ *   - ORDER_NOT_FOUND    : no order with this ID
+ *   - ORDER_FORBIDDEN    : order belongs to a different user
+ *   - CANNOT_RETURN      : order is not in Delivered status
+ */
+export async function returnOrder(
+  orderId: number,
+  requestingUserId: number,
+): Promise<OrderDetailResult> {
+  const order = await getOrderById(orderId);
+
+  if (!order) {
+    const err = new Error('Order not found') as Error & { code: string };
+    err.code = 'ORDER_NOT_FOUND';
+    throw err;
+  }
+
+  if (order.user_id !== requestingUserId) {
+    const err = new Error('You do not have permission to return this order') as Error & { code: string };
+    err.code = 'ORDER_FORBIDDEN';
+    throw err;
+  }
+
+  if (order.status !== 'Delivered') {
+    const err = new Error(`Only delivered orders can be returned. Current status: "${order.status}"`) as Error & { code: string };
+    err.code = 'CANNOT_RETURN';
+    throw err;
+  }
+
+  await pool.query(
+    `UPDATE orders SET status = 'Return_Requested', updated_at = NOW() WHERE id = $1`,
+    [orderId],
+  );
+
+  return getOrderDetail(orderId, requestingUserId);
+}
+
+/**
  * Return a paginated list of orders for the given customer.
  *
  * Validates: Requirement 11.1

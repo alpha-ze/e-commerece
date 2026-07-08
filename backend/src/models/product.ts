@@ -12,6 +12,7 @@ export interface ProductImage {
 
 export interface ProductDetail {
   id: number;
+  sku: string | null;
   name: string;
   description: string | null;
   category_id: number | null;
@@ -43,6 +44,7 @@ export interface ProductRow {
 /** Shape returned by getProducts — includes joined fields */
 export interface ProductListItem {
   id: number;
+  sku: string | null;
   name: string;
   description: string | null;
   category_id: number | null;
@@ -68,6 +70,8 @@ export interface GetProductsOptions {
   pageSize: number;
   /** Case-insensitive full-text search on name or description */
   q?: string;
+  /** Filter by exact SKU (admin use) */
+  sku?: string;
   /** Filter to a single category */
   categoryId?: number;
   /** Minimum effective price (COALESCE(discount_price, price)) */
@@ -100,6 +104,7 @@ export async function getProducts(
     page,
     pageSize,
     q,
+    sku,
     categoryId,
     minPrice,
     maxPrice,
@@ -122,6 +127,12 @@ export async function getProducts(
     conditions.push(
       `(p.name ILIKE $${idx} OR p.description ILIKE $${idx})`,
     );
+  }
+
+  // ── SKU filter (exact match, admin use) ────────────────────────────────────
+  if (sku && sku.trim() !== '') {
+    params.push(sku.trim().toUpperCase());
+    conditions.push(`UPPER(p.sku) = $${params.length}`);
   }
 
   // ── Category filter ────────────────────────────────────────────────────────
@@ -177,6 +188,7 @@ export async function getProducts(
   const dataSql = `
     SELECT
       p.id,
+      p.sku,
       p.name,
       p.description,
       p.category_id,
@@ -238,6 +250,7 @@ export async function getProductById(
   const productSql = `
     SELECT
       p.id,
+      p.sku,
       p.name,
       p.description,
       p.category_id,
@@ -340,6 +353,10 @@ export async function createProduct(
     ]);
 
     const productId = insertResult.rows[0].id;
+
+    // Auto-generate SKU: KDA-XXXXX
+    const sku = `KDA-${String(productId).padStart(5, '0')}`;
+    await client.query('UPDATE products SET sku = $1 WHERE id = $2', [sku, productId]);
 
     // Insert images if provided
     if (params.images && params.images.length > 0) {

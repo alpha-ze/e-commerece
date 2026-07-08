@@ -43,6 +43,11 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.json(body);
 });
 
+// Lightweight ping — use this for keep-alive cron jobs (no DB, no middleware overhead)
+app.get('/ping', (_req: Request, res: Response) => {
+  res.status(200).send('pong');
+});
+
 // Auth routes (rate limiter is applied per-route inside authRouter)
 app.use('/api/auth', authRouter);
 

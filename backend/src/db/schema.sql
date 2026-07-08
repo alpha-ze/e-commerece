@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS categories (
 -- Products
 CREATE TABLE IF NOT EXISTS products (
     id             SERIAL PRIMARY KEY,
+    sku            VARCHAR(50) UNIQUE,
     name           VARCHAR(255) NOT NULL,
     description    TEXT,
     category_id    INTEGER REFERENCES categories(id),
@@ -41,6 +42,19 @@ CREATE TABLE IF NOT EXISTS products (
     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Add SKU column to existing products table if it doesn't exist
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name='products' AND column_name='sku'
+  ) THEN
+    ALTER TABLE products ADD COLUMN sku VARCHAR(50) UNIQUE;
+  END IF;
+END $$;
+
+-- Backfill SKU for existing products that don't have one
+UPDATE products SET sku = 'KDA-' || LPAD(id::text, 5, '0') WHERE sku IS NULL;
 
 -- Product Images
 CREATE TABLE IF NOT EXISTS product_images (
@@ -100,7 +114,7 @@ CREATE TABLE IF NOT EXISTS orders (
     user_id        INTEGER NOT NULL REFERENCES users(id),
     address_id     INTEGER REFERENCES addresses(id),
     status         VARCHAR(20) NOT NULL DEFAULT 'Pending'
-                       CHECK (status IN ('Pending','Confirmed','Shipped','Delivered','Cancelled')),
+                       CHECK (status IN ('Pending','Confirmed','Shipped','Delivered','Cancelled','Return_Requested','Returned')),
     payment_method VARCHAR(50) NOT NULL DEFAULT 'Cash on Delivery',
     subtotal       NUMERIC(10,2) NOT NULL,
     tax            NUMERIC(10,2) NOT NULL DEFAULT 0,
@@ -154,3 +168,15 @@ CREATE INDEX IF NOT EXISTS idx_products_is_featured ON products(is_featured);
 CREATE INDEX IF NOT EXISTS idx_orders_user_id      ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status       ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_cart_user_id        ON cart(user_id);
+
+-- ============================================================
+-- Migrations for existing deployments
+-- ============================================================
+
+-- Extend orders status check to include Return_Requested and Returned
+DO $$ BEGIN
+  ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check;
+  ALTER TABLE orders ADD CONSTRAINT orders_status_check
+    CHECK (status IN ('Pending','Confirmed','Shipped','Delivered','Cancelled','Return_Requested','Returned'));
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
