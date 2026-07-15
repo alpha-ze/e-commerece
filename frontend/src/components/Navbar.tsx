@@ -1,19 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
-
-const CATEGORIES = [
-  { label: 'All Products', to: '/products' },
-  { label: 'Mobiles', to: '/products?categoryId=1' },
-  { label: 'Laptops', to: '/products?categoryId=2' },
-  { label: 'TVs', to: '/products?categoryId=3' },
-  { label: 'Tablets', to: '/products?categoryId=4' },
-  { label: 'Audio', to: '/products?categoryId=5' },
-  { label: 'Cameras', to: '/products?categoryId=6' },
-  { label: 'Gaming', to: '/products?categoryId=7' },
-  { label: 'Accessories', to: '/products?categoryId=8' },
-];
+import { fetchCategories, type Category } from '../api/products';
 
 export default function Navbar() {
   const { user, logout, isAuthenticated, isAdmin } = useAuth();
@@ -21,8 +10,15 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const cartItemCount = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
+
+  useEffect(() => {
+    fetchCategories()
+      .then((res) => setCategories(res.data))
+      .catch(() => {});
+  }, []);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -151,10 +147,23 @@ export default function Navbar() {
       <div className="bg-white border-b border-gray-200 hidden sm:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
-            {CATEGORIES.map((cat) => (
+            <NavLink
+              to="/products"
+              end
+              className={({ isActive }) =>
+                `whitespace-nowrap px-3 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  isActive
+                    ? 'border-[#E31E24] text-[#E31E24]'
+                    : 'border-transparent text-gray-600 hover:text-[#E31E24] hover:border-[#E31E24]'
+                }`
+              }
+            >
+              All Products
+            </NavLink>
+            {categories.map((cat) => (
               <NavLink
-                key={cat.to}
-                to={cat.to}
+                key={cat.id}
+                to={`/products?categoryId=${cat.id}`}
                 className={({ isActive }) =>
                   `whitespace-nowrap px-3 py-3 text-sm font-medium border-b-2 transition-colors ${
                     isActive
@@ -163,7 +172,7 @@ export default function Navbar() {
                   }`
                 }
               >
-                {cat.label}
+                {cat.name}
               </NavLink>
             ))}
           </div>
@@ -192,14 +201,21 @@ export default function Navbar() {
           </form>
           {/* Mobile nav links */}
           <nav className="py-2">
-            {CATEGORIES.map((cat) => (
+            <Link
+              to="/products"
+              onClick={() => setMobileOpen(false)}
+              className="block px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-red-50 hover:text-[#E31E24] transition-colors"
+            >
+              All Products
+            </Link>
+            {categories.map((cat) => (
               <Link
-                key={cat.to}
-                to={cat.to}
+                key={cat.id}
+                to={`/products?categoryId=${cat.id}`}
                 onClick={() => setMobileOpen(false)}
                 className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-[#E31E24] transition-colors"
               >
-                {cat.label}
+                {cat.name}
               </Link>
             ))}
             <Link to="/orders" onClick={() => setMobileOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-[#E31E24] transition-colors border-t border-gray-100 mt-1">
