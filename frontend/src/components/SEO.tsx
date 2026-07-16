@@ -19,7 +19,7 @@ interface SEOProps {
   };
 }
 
-const SITE_URL = 'https://www.illumizellighting.in';
+const SITE_URL = 'https://www.illumizellelightingllc.in';
 
 export default function SEO({
   title,

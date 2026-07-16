@@ -6,4 +6,4 @@ Disallow: /checkout
 Disallow: /profile
 Disallow: /orders
 
-Sitemap: https://www.illumizellighting.in/sitemap.xml
+Sitemap: https://www.illumizellelightingllc.in/sitemap.xml
