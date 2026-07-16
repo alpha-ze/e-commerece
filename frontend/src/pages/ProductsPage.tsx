@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { fetchProducts, fetchCategories } from '../api/products';
 import type { Product, Category, PaginationMeta } from '../api/products';
 import ProductCard from '../components/ProductCard';
+import SEO from '../components/SEO';
+import storeConfig from '../config/store';
 
 const PAGE_SIZE = 12;
 
@@ -201,6 +203,11 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEO
+        title="All Products"
+        description={`Browse all products at ${storeConfig.name}. Find great deals across all categories.`}
+        url="/products"
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page header */}
         <div className="mb-6">

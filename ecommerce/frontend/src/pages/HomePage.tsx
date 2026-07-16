@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchProducts, fetchCategories, type Product, type Category } from '../api/products';
 import ProductCard from '../components/ProductCard';
+import SEO from '../components/SEO';
 import storeConfig from '../config/store';
 
 // ── Hero banner slides ───────────────────────────────────────────────────────
@@ -244,6 +245,8 @@ export default function HomePage() {
   }, []);
 
   return (
+    <>
+    <SEO />
     <div className="min-h-screen bg-[#f5f5f5]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-6">
 
@@ -329,5 +332,6 @@ export default function HomePage() {
 
       </div>
     </div>
+    </>
   );
 }

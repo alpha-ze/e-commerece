@@ -5,6 +5,8 @@ import type { ProductDetail, ProductImage } from '../api/products';
 import { CartContext } from '../context/CartContext';
 import { formatPrice } from '../utils/currency';
 import axios from 'axios';
+import SEO from '../components/SEO';
+import storeConfig from '../config/store';
 
 // ── Loading spinner ──────────────────────────────────────────────────────────
 function LoadingSpinner() {
@@ -310,6 +312,22 @@ export default function ProductDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEO
+        title={product.name}
+        description={product.description ?? `Buy ${product.name} at ${storeConfig.name}`}
+        image={product.images?.[0]?.url}
+        url={`/products/${product.id}`}
+        type="product"
+        product={{
+          name: product.name,
+          price: effectivePrice,
+          currency: storeConfig.currency,
+          image: product.images?.[0]?.url,
+          description: product.description ?? undefined,
+          sku: product.sku ?? undefined,
+          availability: product.stock > 0 ? 'InStock' : 'OutOfStock',
+        }}
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Breadcrumb productName={product.name} />
 
