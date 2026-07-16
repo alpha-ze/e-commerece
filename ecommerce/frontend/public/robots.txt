@@ -6,4 +6,4 @@ Disallow: /checkout
 Disallow: /profile
 Disallow: /orders
 
-Sitemap: https://e-commerece-kada.vercel.app/sitemap.xml
+Sitemap: https://www.illumizellighting.in/sitemap.xml

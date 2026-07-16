@@ -19,7 +19,7 @@ interface SEOProps {
   };
 }
 
-const SITE_URL = 'https://e-commerece-kada.vercel.app';
+const SITE_URL = 'https://www.illumizellighting.in';
 
 export default function SEO({
   title,
