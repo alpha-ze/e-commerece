@@ -9,6 +9,7 @@ export interface ProductImage {
 
 export interface ProductDetail {
   id: number;
+  sku: string | null;
   name: string;
   description: string | null;
   category_id: number | null;
