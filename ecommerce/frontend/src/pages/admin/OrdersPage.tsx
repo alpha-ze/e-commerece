@@ -5,6 +5,7 @@ import {
   type AdminOrder,
 } from '../../api/admin';
 import type { PaginationMeta } from '../../api/products';
+import { formatPrice } from '../../utils/currency';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -142,7 +143,7 @@ export default function AdminOrdersPage() {
                           <div className="text-xs text-gray-400">{o.user_email}</div>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{formatDate(o.created_at)}</td>
-                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">${parseFloat(o.total).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatPrice(o.total)}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[o.status] ?? 'bg-gray-100 text-gray-700'}`}>
                             {o.status}

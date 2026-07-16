@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAdminOrders, updateAdminOrder, type AdminOrder } from '../../api/admin';
 import type { PaginationMeta } from '../../api/products';
+import { formatPrice } from '../../utils/currency';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -177,7 +178,7 @@ export default function AdminShippingPage() {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{formatDate(order.created_at)}</td>
                         <td className="px-4 py-3 text-sm text-gray-500">{order.payment_method}</td>
-                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">${parseFloat(order.total).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatPrice(order.total)}</td>
                         <td className="px-4 py-3"><StatusBadge status={order.status} /></td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2 flex-wrap">

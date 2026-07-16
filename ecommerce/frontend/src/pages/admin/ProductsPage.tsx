@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 import { fetchCategories, type Product, type Category, type PaginationMeta } from '../../api/products';
+import { formatPrice } from '../../utils/currency';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -645,11 +646,11 @@ export default function AdminProductsPage() {
                         <td className="px-4 py-3 text-sm text-gray-900">
                           {p.discount_price ? (
                             <>
-                              <span className="font-semibold">${parseFloat(p.discount_price).toFixed(2)}</span>
-                              <span className="ml-1 text-xs text-gray-400 line-through">${parseFloat(p.price).toFixed(2)}</span>
+                              <span className="font-semibold">{formatPrice(p.discount_price)}</span>
+                              <span className="ml-1 text-xs text-gray-400 line-through">{formatPrice(p.price)}</span>
                             </>
                           ) : (
-                            <span className="font-semibold">${parseFloat(p.price).toFixed(2)}</span>
+                            <span className="font-semibold">{formatPrice(p.price)}</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-700">{p.stock}</td>

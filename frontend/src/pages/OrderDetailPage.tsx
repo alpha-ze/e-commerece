@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getOrderById, cancelOrder, returnOrder, type OrderDetailResult } from '../api/orders';
+import { formatPrice } from '../utils/currency';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -268,10 +269,10 @@ function ItemsTable({ order }: { order: OrderDetailResult }) {
                   {item.quantity}
                 </td>
                 <td className="py-3.5 px-4 text-right text-sm text-gray-500">
-                  ${parseFloat(item.unit_price).toFixed(2)}
+                  {formatPrice(item.unit_price)}
                 </td>
                 <td className="py-3.5 text-right text-sm font-semibold text-gray-900">
-                  ${parseFloat(item.subtotal).toFixed(2)}
+                  {formatPrice(item.subtotal)}
                 </td>
               </tr>
             ))}
@@ -295,21 +296,21 @@ function TotalsCard({ order }: { order: OrderDetailResult }) {
       <dl className="space-y-3 text-sm">
         <div className="flex justify-between">
           <dt className="text-gray-500">Subtotal</dt>
-          <dd className="font-medium text-gray-900">${subtotal.toFixed(2)}</dd>
+          <dd className="font-medium text-gray-900">{formatPrice(subtotal)}</dd>
         </div>
         <div className="flex justify-between">
           <dt className="text-gray-500">Tax</dt>
-          <dd className="font-medium text-gray-900">${tax.toFixed(2)}</dd>
+          <dd className="font-medium text-gray-900">{formatPrice(tax)}</dd>
         </div>
         {discount > 0 && (
           <div className="flex justify-between">
             <dt className="text-gray-500">Discount</dt>
-            <dd className="font-medium text-green-600">−${discount.toFixed(2)}</dd>
+            <dd className="font-medium text-green-600">−{formatPrice(discount)}</dd>
           </div>
         )}
         <div className="flex justify-between pt-3 border-t border-gray-100">
           <dt className="font-bold text-gray-900 text-base">Total</dt>
-          <dd className="font-bold text-gray-900 text-base">${total.toFixed(2)}</dd>
+          <dd className="font-bold text-gray-900 text-base">{formatPrice(total)}</dd>
         </div>
       </dl>
     </Section>

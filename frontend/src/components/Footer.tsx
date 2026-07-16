@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import storeConfig from '../config/store';
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -10,9 +11,9 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <span className="text-white text-2xl font-extrabold tracking-tight">Kada</span>
+            <span className="text-white text-2xl font-extrabold tracking-tight">{storeConfig.name}</span>
             <p className="mt-3 text-sm leading-relaxed">
-              Your trusted destination for electronics and more — quality products at unbeatable prices.
+              {storeConfig.tagline}
             </p>
             <div className="flex gap-3 mt-4">
               {/* Social placeholders */}
@@ -68,15 +69,15 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li className="flex items-start gap-2">
                 <span>📍</span>
-                <span>Dubai, United Arab Emirates</span>
+                <span>{storeConfig.location}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span>📧</span>
-                <span>support@kada.ae</span>
+                <span>{storeConfig.supportEmail}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span>📞</span>
-                <span>+971 4 000 0000</span>
+                <span>{storeConfig.supportPhone}</span>
               </li>
             </ul>
           </div>
@@ -86,7 +87,7 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
-          <p>© {year} Kada Electronics. All rights reserved.</p>
+          <p>© {year} {storeConfig.name}. All rights reserved.</p>
           <div className="flex gap-4">
             <span className="hover:text-white cursor-pointer">Privacy Policy</span>
             <span className="hover:text-white cursor-pointer">Terms of Use</span>

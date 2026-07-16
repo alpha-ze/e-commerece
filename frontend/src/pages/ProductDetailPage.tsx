@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { fetchProductById } from '../api/products';
 import type { ProductDetail, ProductImage } from '../api/products';
 import { CartContext } from '../context/CartContext';
+import { formatPrice } from '../utils/currency';
 import axios from 'axios';
 
 // ── Loading spinner ──────────────────────────────────────────────────────────
@@ -348,12 +349,12 @@ export default function ProductDetailPage() {
               {/* Price */}
               <div className="flex items-baseline gap-3 flex-wrap">
                 <span className="text-3xl font-bold text-gray-900">
-                  ${effectivePrice.toFixed(2)}
+                  {formatPrice(effectivePrice)}
                 </span>
                 {hasDiscount && (
                   <>
                     <span className="text-lg text-gray-400 line-through">
-                      ${originalPrice.toFixed(2)}
+                      {formatPrice(originalPrice)}
                     </span>
                     <span className="bg-green-100 text-green-700 text-sm font-semibold px-2 py-0.5 rounded-full">
                       -{discountPct}%

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getOrders, cancelOrder, type OrderSummary, type OrderPaginationMeta } from '../api/orders';
+import { formatPrice } from '../utils/currency';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -119,7 +120,7 @@ function OrderRow({ order, onCancelled }: OrderRowProps) {
           </span>
         </td>
         <td className="px-3 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap text-right">
-          ${parseFloat(order.total).toFixed(2)}
+          {formatPrice(order.total)}
         </td>
         <td className="py-4 pl-3 pr-6 text-sm text-right whitespace-nowrap">
           <div className="flex items-center justify-end gap-3">

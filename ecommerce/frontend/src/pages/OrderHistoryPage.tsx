@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getOrders, cancelOrder, type OrderSummary, type OrderPaginationMeta } from '../api/orders';
+import { formatPrice } from '../utils/currency';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, string> = {
-  Pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  Confirmed: 'bg-blue-100 text-blue-800 border-blue-200',
-  Shipped: 'bg-purple-100 text-purple-800 border-purple-200',
-  Delivered: 'bg-green-100 text-green-800 border-green-200',
-  Cancelled: 'bg-red-100 text-red-800 border-red-200',
+  Pending:          'bg-yellow-100 text-yellow-800 border-yellow-200',
+  Confirmed:        'bg-blue-100 text-blue-800 border-blue-200',
+  Shipped:          'bg-purple-100 text-purple-800 border-purple-200',
+  Delivered:        'bg-green-100 text-green-800 border-green-200',
+  Cancelled:        'bg-red-100 text-red-800 border-red-200',
+  Return_Requested: 'bg-orange-100 text-orange-800 border-orange-200',
+  Returned:         'bg-gray-100 text-gray-700 border-gray-200',
 };
 
 function statusBadgeClass(status: string): string {
@@ -74,7 +77,7 @@ function EmptyOrders() {
 
 interface OrderRowProps {
   order: OrderSummary;
-  onCancelled: (id: number) => void;
+  onCancelled: () => void;
 }
 
 function OrderRow({ order, onCancelled }: OrderRowProps) {
@@ -89,7 +92,7 @@ function OrderRow({ order, onCancelled }: OrderRowProps) {
     setCancelError('');
     try {
       await cancelOrder(order.id);
-      onCancelled(order.id);
+      onCancelled();
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: { message?: string } } } })
@@ -117,7 +120,7 @@ function OrderRow({ order, onCancelled }: OrderRowProps) {
           </span>
         </td>
         <td className="px-3 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap text-right">
-          ${parseFloat(order.total).toFixed(2)}
+          {formatPrice(order.total)}
         </td>
         <td className="py-4 pl-3 pr-6 text-sm text-right whitespace-nowrap">
           <div className="flex items-center justify-end gap-3">

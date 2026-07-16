@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getAddresses, type AddressResult } from '../api/profile';
 import { createOrder } from '../api/orders';
 import { useCart } from '../hooks/useCart';
+import { formatPrice } from '../utils/currency';
 
 // ── Loading spinner ───────────────────────────────────────────────────────────
 
@@ -426,7 +427,7 @@ export default function CheckoutPage() {
 
                             {/* Line total */}
                             <span className="text-xs font-semibold text-gray-900 flex-shrink-0">
-                              ${(price * item.quantity).toFixed(2)}
+                              {formatPrice(price * item.quantity)}
                             </span>
                           </li>
                         );
@@ -440,17 +441,17 @@ export default function CheckoutPage() {
                           Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})
                         </dt>
                         <dd className="font-medium text-gray-900">
-                          ${cart!.subtotal.toFixed(2)}
+                          {formatPrice(cart!.subtotal)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-gray-500">Tax</dt>
-                        <dd className="font-medium text-gray-900">${cart!.tax.toFixed(2)}</dd>
+                        <dd className="font-medium text-gray-900">{formatPrice(cart!.tax)}</dd>
                       </div>
                       <div className="flex justify-between pt-3 border-t border-gray-100">
                         <dt className="font-bold text-gray-900 text-base">Total</dt>
                         <dd className="font-bold text-gray-900 text-base">
-                          ${cart!.total.toFixed(2)}
+                          {formatPrice(cart!.total)}
                         </dd>
                       </div>
                     </dl>

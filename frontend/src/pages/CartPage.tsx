@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { type CartItemResult } from '../api/cart';
 import { useCart } from '../hooks/useCart';
+import { formatPrice } from '../utils/currency';
 
 // ── Loading spinner ───────────────────────────────────────────────────────────
 
@@ -205,11 +206,11 @@ function CartItemRow({ item, updating, onQuantityChange, onRemove }: CartItemRow
           </Link>
           <div className="flex items-baseline gap-2 mt-1 flex-wrap">
             <span className="text-sm font-bold text-gray-900">
-              ${effectivePrice.toFixed(2)}
+              {formatPrice(effectivePrice)}
             </span>
             {hasDiscount && (
               <span className="text-xs text-gray-400 line-through">
-                ${originalPrice.toFixed(2)}
+                {formatPrice(originalPrice)}
               </span>
             )}
           </div>
@@ -248,7 +249,7 @@ function CartItemRow({ item, updating, onQuantityChange, onRemove }: CartItemRow
           </button>
 
           <span className="text-sm font-semibold text-gray-900 min-w-[4rem] text-right">
-            ${lineTotal.toFixed(2)}
+            {formatPrice(lineTotal)}
           </span>
         </div>
       </div>
@@ -278,15 +279,15 @@ function OrderSummary({ subtotal, tax, total, itemCount, loading }: OrderSummary
           <dt className="text-gray-500">
             Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})
           </dt>
-          <dd className="font-medium text-gray-900">${subtotal.toFixed(2)}</dd>
+          <dd className="font-medium text-gray-900">{formatPrice(subtotal)}</dd>
         </div>
         <div className="flex justify-between">
           <dt className="text-gray-500">Tax</dt>
-          <dd className="font-medium text-gray-900">${tax.toFixed(2)}</dd>
+          <dd className="font-medium text-gray-900">{formatPrice(tax)}</dd>
         </div>
         <div className="flex justify-between pt-3 border-t border-gray-100">
           <dt className="font-bold text-gray-900 text-base">Total</dt>
-          <dd className="font-bold text-gray-900 text-base">${total.toFixed(2)}</dd>
+          <dd className="font-bold text-gray-900 text-base">{formatPrice(total)}</dd>
         </div>
       </dl>
 

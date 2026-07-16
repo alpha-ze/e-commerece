@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getCoupons, createCoupon, deleteCoupon, type Coupon, type CreateCouponPayload } from '../../api/admin';
+import { formatPrice } from '../../utils/currency';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -163,7 +164,7 @@ export default function AdminCouponsPage() {
                         <td className="px-4 py-3 text-sm text-gray-900">
                           {c.discount_type === 'percentage'
                             ? `${parseFloat(c.discount_value).toFixed(0)}%`
-                            : `$${parseFloat(c.discount_value).toFixed(2)}`}
+                            : formatPrice(c.discount_value)}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{formatDate(c.expires_at)}</td>
                         <td className="px-4 py-3">

@@ -16,7 +16,7 @@ import { getDashboard, type DashboardData } from '../../api/admin';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+  return `AED ${value.toFixed(2)}`;
 }
 
 function formatDate(iso: string): string {
@@ -215,7 +215,7 @@ function AdminDashboardPage() {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                       <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                      <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} tickFormatter={(v: number) => maxRevenue >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v}`} width={55} />
+                      <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} tickFormatter={(v: number) => maxRevenue >= 1000 ? `AED ${(v / 1000).toFixed(1)}k` : `AED ${v}`} width={55} />
                       <Tooltip content={<CustomTooltip />} />
                       <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2.5} fill="url(#revenueGradient)" dot={false} activeDot={{ r: 5, fill: '#6366f1', strokeWidth: 0 }} />
                     </AreaChart>
@@ -223,7 +223,7 @@ function AdminDashboardPage() {
                     <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                       <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                      <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} tickFormatter={(v: number) => maxRevenue >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v}`} width={55} />
+                      <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} tickFormatter={(v: number) => maxRevenue >= 1000 ? `AED ${(v / 1000).toFixed(1)}k` : `AED ${v}`} width={55} />
                       <Tooltip content={<CustomTooltip />} />
                       <Bar dataKey="revenue" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={32} />
                     </BarChart>

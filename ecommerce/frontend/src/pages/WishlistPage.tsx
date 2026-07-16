@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getWishlist, removeFromWishlist, type WishlistItemResult } from '../api/wishlist';
+import { formatPrice } from '../utils/currency';
 
 // ── Loading spinner ───────────────────────────────────────────────────────────
 
@@ -114,11 +115,11 @@ function WishlistItemCard({ item, removing, onRemove }: WishlistItemCardProps) {
           </Link>
           <div className="flex items-baseline gap-2 mt-1 flex-wrap">
             <span className="text-base font-bold text-gray-900">
-              ${effectivePrice.toFixed(2)}
+              {formatPrice(effectivePrice)}
             </span>
             {hasDiscount && (
               <span className="text-sm text-gray-400 line-through">
-                ${originalPrice.toFixed(2)}
+                {formatPrice(originalPrice)}
               </span>
             )}
           </div>

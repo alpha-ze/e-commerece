@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
 import { fetchCategories, type Category } from '../api/products';
+import storeConfig from '../config/store';
 
 export default function Navbar() {
   const { user, logout, isAuthenticated, isAdmin } = useAuth();
@@ -33,7 +34,7 @@ export default function Navbar() {
       {/* ── Top utility bar ─────────────────────────────────────────── */}
       <div className="bg-[#1a1a1a] text-gray-300 text-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-8 flex items-center justify-between">
-          <span className="hidden sm:block">Free delivery on orders above AED 200</span>
+          <span className="hidden sm:block">Free delivery on orders above {storeConfig.currency} {storeConfig.freeDeliveryThreshold}</span>
           <div className="flex items-center gap-4">
             <Link to="/orders" className="hover:text-white transition-colors">Track Order</Link>
             {isAdmin && (
@@ -53,7 +54,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
           {/* Logo */}
           <Link to="/" className="flex-shrink-0">
-            <span className="text-white text-2xl font-extrabold tracking-tight">Kada</span>
+            <span className="text-white text-2xl font-extrabold tracking-tight">{storeConfig.name}</span>
           </Link>
 
           {/* Search bar */}
